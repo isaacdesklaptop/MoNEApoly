@@ -3,7 +3,8 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - Bullet
   layers:
   - Default
   - TransparentFX
@@ -11,7 +12,7 @@ TagManager:
   - 
   - Water
   - UI
-  - 
+  - TopUI
   - 
   - 
   - 
@@ -46,4 +47,7 @@ TagManager:
     locked: 0
   - name: 2
     uniqueID: 2115439605
+    locked: 0
+  - name: TopUI
+    uniqueID: 2856199567
     locked: 0
