@@ -6,6 +6,7 @@ using TMPro;
 
 public class Dice : MonoBehaviour
 {
+    public GameManager GameManager;
     public PlayerEntity Player;
     public TextMeshProUGUI rolledDisplay;
     public AudioSource buttonAudio;
@@ -16,6 +17,7 @@ public class Dice : MonoBehaviour
     void Start()
     {
         diceSprite = GetComponent<Image>();
+        GameManager = GameObject.Find("GameManager").GetComponent<GameManager>();
     }
 
     // Update is called once per frame
@@ -26,6 +28,7 @@ public class Dice : MonoBehaviour
 
     public void OnClick()
     {
+        DiceRollAnimation();
         Player = GameObject.Find("Player Object(Clone)").GetComponent<PlayerEntity>();
         int diceRoll1 = Random.Range(1,maxOneDice+1);
         int diceRoll2 = Random.Range(1, maxOneDice + 1);
@@ -37,11 +40,11 @@ public class Dice : MonoBehaviour
 
     private IEnumerator DiceRollAnimation()
     {
-        int randomDiceSide = 0;
+        int randomDiceSide;
         for (int i = 0; i < 20; i++)
         {
             randomDiceSide = Random.Range(0, 6);
-            diceSprite.sprite = diceSides[randomDiceSide];
+            GameManager.ChangeDiceSprite(diceSides, randomDiceSide);
             yield return new WaitForSeconds(0.05f);
         }
     }

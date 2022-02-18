@@ -29,7 +29,7 @@ Transform:
   m_GameObject: {fileID: 5608567287598334038}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 4.2, y: -4.2, z: 0}
-  m_LocalScale: {x: 0.2, y: 0.2, z: 1}
+  m_LocalScale: {x: 0.15, y: 0.15, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -102,9 +102,16 @@ MonoBehaviour:
   moveSpeed: 100
   currentPosition: 0
   GameManager: {fileID: 0}
+  userName: 
+  balance: 0
   purchReqText: {fileID: 0}
   costText: {fileID: 0}
   balanceText: {fileID: 0}
+  photonView: {fileID: 0}
+  balanceDText: {fileID: 0}
+  playerTabNamePrefab: {fileID: 6206262478087391647, guid: 761aed22a6eb8284b84f47c9913c42dd, type: 3}
+  playerTabNameListing: {fileID: 0}
+  TabScreenCanvas: {fileID: 0}
 --- !u!114 &363777614006026357
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -4,11 +4,19 @@ using UnityEngine;
 using System.IO;
 using TMPro;
 using UnityEngine.UI;
+using Photon.Pun;
 
 public class GameManager : MonoBehaviour
 {
+    public PhotonView photonView;
+    
+    // Board Setup
     public GameObject[] propertiesArray = new GameObject[40];
     public Property[] propertyArray = new Property[40];
+
+    // Room
+    public Dictionary<string, int> playersDict = new Dictionary<string, int>();
+
     // PurchaseRequest   
     public GameObject purchaseRequestCanvas;
     public TextMeshProUGUI purchReqText;
@@ -16,40 +24,90 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI balanceText;
     public GameObject purchaseRequestBuyableCanvas;
     public GameObject purchaseRequestNotBuyableCanvas;
+    public GameObject purchaseRequestRentCanvas;
+    public TextMeshProUGUI rentCostText;
+
+    // HUD
+    public TextMeshProUGUI balanceDText;
+    public GameObject escMenu;
+    public TextMeshProUGUI escMenuNameText;
+    public TextMeshProUGUI escMenuRoomText;
+
+    // Dice
+    public Image diceSprite;
+    public GameObject dice;
 
     // Start is called before the first frame update
     void Start()
     {
+        photonView = GetComponent<PhotonView>();
         LoadProperties(propertyArray);
         hidePurchaseRequest();
+        HideEscMenu();
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
-    public void PlayerBuy(Property targetProperty, PlayerEntity targetPlayer)
+    public void PlayerBuy(int targetProperty, string targetPlayer)
     {
-        targetProperty.owned = true;
+        propertyArray[targetProperty].owned = true;
+        photonView.RPC("UpdatePropertyOwnership", RpcTarget.AllBuffered, targetProperty, true, targetPlayer);
     }
+
+    public void ChangeDiceSprite(Sprite[] diceSides, int randomDiceSide)
+    {
+        dice = GameObject.Find("Dice Button");
+        diceSprite = dice.GetComponent<Image>();
+        diceSprite.sprite = diceSides[randomDiceSide];
+    }
+
+    public void UpdateBalanceText()
+    {
+        balanceDText.text = $"${GameObject.Find("Player Object(Clone)").GetComponent<PlayerEntity>().balance}";
+    }
+    
 
     public void hidePurchaseRequest()
     {
         purchaseRequestCanvas.SetActive(false);
     }
+    
     public void showPurchaseRequestBuyable()
     {
         purchaseRequestCanvas.SetActive(true);
         purchaseRequestBuyableCanvas.SetActive(true);
         purchaseRequestNotBuyableCanvas.SetActive(false);
+        purchaseRequestRentCanvas.SetActive(false);
     }
+    
     public void showPurchaseRequestNotBuyable()
     {
         purchaseRequestCanvas.SetActive(true);
         purchaseRequestBuyableCanvas.SetActive(false);
+        purchaseRequestRentCanvas.SetActive(false);
         purchaseRequestNotBuyableCanvas.SetActive(true);
+    }
+
+    public void showRentPay()
+    {
+        purchaseRequestCanvas.SetActive(true);
+        purchaseRequestBuyableCanvas.SetActive(false);
+        purchaseRequestRentCanvas.SetActive(true);
+        purchaseRequestNotBuyableCanvas.SetActive(false);
+    }
+
+    public void ShowEscMenu()
+    {
+        escMenu.SetActive(true);
+    }
+
+    public void HideEscMenu()
+    {
+        escMenu.SetActive(false);
     }
 
     private void LoadProperties(Property[] propertyArray) // WOULD LIKE TO DO FROM A TEXT FILE WHEN FIGURED OUT.
@@ -82,5 +140,20 @@ public class GameManager : MonoBehaviour
             // asign property into Property array
             propertyArray[currentProperty] = property;
          }
+    }
+
+    [PunRPC]
+    void UpdatePropertyOwnership(int propertyToUpdate, bool owned, string newOwner)
+    {
+        propertyArray[propertyToUpdate].owned = owned;
+        propertyArray[propertyToUpdate].owner = newOwner;
+    }
+
+    [PunRPC]
+    void UpdatePlayerDicts(string userName, int viewID)
+    {
+        playersDict.Add(userName, viewID);
+        Debug.Log($"Add comp");
+        GameObject.Find("Player Object(Clone)").GetComponent<PlayerEntity>().UpdatePlayerTabCanvas(userName);
     }
 }
