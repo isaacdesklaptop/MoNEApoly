@@ -9,6 +9,7 @@ public class Property
     public bool owned { get; set; } // Is the property owned by a player?
     public string owner { get; set; } // Which player owns the property
     public double rent { get; set; } // Rent when landed on
+    public int rentMultiplier { get; set; }
     public double mortgage { get; } // Money gained when mortgaged to bank
     public double purchaseCost { get; set; } // Cost to buy property
     public int houseCount { get; set; } // How many houses are on the property

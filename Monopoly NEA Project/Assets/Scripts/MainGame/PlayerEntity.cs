@@ -8,7 +8,7 @@ using Photon.Realtime;
 
 public class PlayerEntity : MonoBehaviour
 {
-    public double moveSpeed = 0f;
+    public float moveSpeed = 0f;
     public int currentPosition = 0;
     public GameManager GameManager;
     public string userName;
@@ -24,6 +24,7 @@ public class PlayerEntity : MonoBehaviour
     // HUD
     public TextMeshProUGUI balanceDText;
     bool escapeMenuOpen;
+    public Image titleDeedObjectSprite;
 
     // Tab Screen
     public TextMeshProUGUI playerTabNamePrefab;
@@ -34,6 +35,7 @@ public class PlayerEntity : MonoBehaviour
     void Start()
     {
         balanceDText = GameObject.Find("BalanceDText").GetComponent<TextMeshProUGUI>();
+        titleDeedObjectSprite = GameObject.Find("TitleDeedObject").GetComponent<Image>();
         this.SetPlayerBalance(1500, 1); // Initializes the player's balance to $1,500 at start of game   
         GameManager = GameObject.Find("GameManager").GetComponent<GameManager>();
         photonView = GetComponent<PhotonView>();
@@ -50,7 +52,7 @@ public class PlayerEntity : MonoBehaviour
     void Update()
     {
         GameManager.UpdateBalanceText();
-
+        GameManager.UpdateTitleDeedSprite(this.currentPosition);
 
         // Input Checks
         if (Input.GetKey("tab"))
