@@ -43,6 +43,21 @@ public class GameManager : MonoBehaviour
     public GameObject escMenu;
     public TextMeshProUGUI escMenuNameText;
     public TextMeshProUGUI escMenuRoomText;
+    public GameObject tradeButton;
+    public GameObject endTurnButton;
+    // Trading HUD
+    public GameObject tradingCanvas;
+    public GameObject makingTradeParent;
+    public GameObject recievingTradeParent;
+    public TextMeshProUGUI tradingPlayersText;
+    public TextMeshProUGUI tradingCurrentOffer;
+    public GameObject makingConfirmRequestButton;
+    public GameObject makingCancelTradeButton;
+    public Slider makingTradeOfferSlider;
+    public Image tradingTitleDeed;
+    // PlayerListing HUD
+    public GameObject playerListingObjectPrefab;
+    public GameObject playerListingListing;
 
     // Dice
     //public Image diceSprite;
@@ -53,10 +68,12 @@ public class GameManager : MonoBehaviour
     {
         thisPlayer = GameObject.Find("Player Object(Clone)");
         photonView = GetComponent<PhotonView>();
-        DisableDice();
         LoadProperties(propertyArray);
         hidePurchaseRequest();
         HideEscMenu();
+        DisableTurnButtons();
+        HideTradeMenu();
+       // InitiatePlayerListing();
         playerTurn = 1;
         myPlayerNum = thisPlayer.GetComponent<PhotonView>().ViewID / 1000;
         CallTurnRPC();
@@ -68,13 +85,25 @@ public class GameManager : MonoBehaviour
     {
         if (playerTurn == myPlayerNum)
         {
-            EnableDice();
+            EnableTurnButtons();
         }
     }
+
+    //public void InitiatePlayerListing()
+    //{
+    //    Debug.Log("hello");
+    //    Debug.Log(playersDict.Count);
+    //    for (int i = 0; i < playersDict.Count; i++)
+    //    {
+    //        Debug.Log("hello again");
+    //        GameObject andy = Instantiate(playerListingObjectPrefab, playerListingListing.GetComponent<Transform>());
+    //    }
+    //}
 
     public void PlayerBuy(int targetProperty, string targetPlayer)
     {
         propertyArray[targetProperty].owned = true;
+        propertyArray[targetProperty].isMine = true;
         photonView.RPC("UpdatePropertyOwnership", RpcTarget.AllBuffered, targetProperty, true, targetPlayer);
     }
 
@@ -84,20 +113,22 @@ public class GameManager : MonoBehaviour
         rolledDisplay.text = $"{prevUserName} rolled: {prevRoll}";
     }
 
-    public void UpdateTitleDeedSprite(int posInArray)
+    public void DisableTurnButtons()
     {
-        titleDeedObjectSprite.sprite = titleDeedSpriteArray[posInArray];
-    }
-
-    public void EnableDice()
-    {
-        dice.GetComponent<Button>().interactable = true;
-    }
-
-    public void DisableDice()
-    {
+        tradeButton.GetComponent<Button>().interactable = false;
+        endTurnButton.GetComponent<Button>().interactable = false;
         dice.GetComponent<Button>().interactable = false;
-        //dice.SetActive(false);
+    }
+
+    public void EnableTurnButtons()
+    {
+        if(propertyArray[thisPlayer.GetComponent<PlayerEntity>().currentPosition].isMine)    
+        {
+            tradeButton.GetComponent<Button>().interactable = true;
+            makingTradeOfferSlider.maxValue = 500;
+        }
+        endTurnButton.GetComponent<Button>().interactable = true;
+        dice.GetComponent<Button>().interactable = true;
     }
 
     //public void ChangeDiceSprite(Sprite[] diceSides, int randomDiceSide)
@@ -160,6 +191,29 @@ public class GameManager : MonoBehaviour
         escMenu.SetActive(false);
     }
 
+    public void ShowMakingTrade()
+    {
+        tradingTitleDeed.sprite = titleDeedSpriteArray[thisPlayer.GetComponent<PlayerEntity>().currentPosition];
+        tradingPlayersText.text = $"{thisPlayer.GetComponent<PlayerEntity>().userName} -> {propertyArray[thisPlayer.GetComponent<PlayerEntity>().currentPosition].owner}";
+        tradingCanvas.SetActive(true);
+        makingTradeParent.SetActive(true);
+    }
+
+    public void ShowRecievingTrade()
+    {
+        tradingTitleDeed.sprite = titleDeedSpriteArray[thisPlayer.GetComponent<PlayerEntity>().currentPosition];
+        tradingPlayersText.text = $"{propertyArray[thisPlayer.GetComponent<PlayerEntity>().currentPosition].owner} -> {thisPlayer.GetComponent<PlayerEntity>().userName}";
+        tradingCanvas.SetActive(true);
+        recievingTradeParent.SetActive(true);
+    }
+
+    public void HideTradeMenu()
+    {
+        tradingCanvas.SetActive(false);
+        recievingTradeParent.SetActive(false);
+        makingTradeParent.SetActive(false);
+    }
+
     private void LoadProperties(Property[] propertyArray) // WOULD LIKE TO DO FROM A TEXT FILE WHEN FIGURED OUT.
     {
         string[] propertyNamesArray = new string[40] {"Go" , "Old Kent Road" , "Community Chest" , "Whitechapel Road" , 
@@ -190,7 +244,7 @@ public class GameManager : MonoBehaviour
             // set purchaseCost
             property.purchaseCost = propertyCostsArray[currentProperty];
             // set initialRent
-            property.initalRent = propertyRentsArray[currentProperty];
+            property.rent = propertyRentsArray[currentProperty];
 
             // asign property into Property array
             propertyArray[currentProperty] = property;
@@ -209,7 +263,7 @@ public class GameManager : MonoBehaviour
     {
         playersDict.Add(userName, viewID);
         Debug.Log($"Add comp");
-        thisPlayer.GetComponent<PlayerEntity>().UpdatePlayerTabCanvas(userName);
+        thisPlayer.GetComponent<PlayerEntity>().UpdatePlayerTabCanvas(userName, thisPlayer.GetComponent<PlayerEntity>().balance);
     }
 
     [PunRPC]
@@ -224,6 +278,7 @@ public class GameManager : MonoBehaviour
             playerTurn = 1;
         }
         UpdateRollText(userName, roll);
-        DisableDice();
+        titleDeedObjectSprite.sprite = titleDeedSpriteArray[thisPlayer.GetComponent<PlayerEntity>().currentPosition];
+        DisableTurnButtons();
     }
 }
