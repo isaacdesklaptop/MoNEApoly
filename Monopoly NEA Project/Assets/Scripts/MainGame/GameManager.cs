@@ -196,16 +196,16 @@ public class GameManager : MonoBehaviour
         };
 
         #region Community Chests Array Initialization
-        communityChestTextsArray = new string[15] { "Pay hospital fee of $100." , "It's your birthday! Collect $10 from every other player.",
-            "Pay a fine of $10 or take a 'Chance'.", "Go back to \"Old Kent Road\"." , "Recieve interest on 7% preference shares, $25." ,
+        communityChestTextsArray = new string[15] { "Pay hospital fee of $100." , "It's your birthday! Collect $10 from the bank",
+            "Pay a fine of $10", "Go back to \"Old Kent Road\"." , "Recieve interest on 7% preference shares, $25." ,
             "You have won second prize in a beauty contest, collect $10.", "GET OUT OF JAIL FREE." , "You inherited $100." , "Doctor's fee, pay $50.",
             "Income Tax refund, collect $20." , "Go directly to \"Jail\"." , "Pay your insurance premium of $50.", "From sale of stock you get $50.",
             "Bank error in  your favour, collect $200.", "Advance to \"Go\"." };
         #endregion
 
         #region Chances Array Initialiaztion
-        chanceTextsArray = new string[15] { "Drunk driving fine, pay $20.", "Make general repairs on all houses. Per house: pay $25.",
-            "Advance to \"Trafalgar Square\", collect $200 if you pass go.", "Pay school fees of $150.", "Street repairs, pay $40 per house.",
+        chanceTextsArray = new string[15] { "Drunk driving fine, pay $20.", "Make general repairs on houses, pay $25.",
+            "Advance to \"Trafalgar Square\".", "Pay school fees of $150.", "Street repairs, pay $40.",
             "Advance to \"Go\".", "GET OUT OF JAIL FREE.", "Speeding fine, pay $15.", "Go back three spaces.", "Your building loan matures, recieve $150.", "Bank pays you dividend of $50.",
             "Advance to \"Mayfair\".", "Go directly to \"Jail\".", "You won a crossword competition, collect $100.", "Annuity matures, collect $100." };
         #endregion
