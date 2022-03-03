@@ -16,11 +16,16 @@ public class GameManager : MonoBehaviour
     public int myPlayerNum;
     public GameObject thisPlayer;
     public int manageDiceRoll;
+    public bool rollTaken;
+    public int doubleCounter;
 
     // Board Setup
     public GameObject[] propertiesArray = new GameObject[40];
     public Property[] propertyArray = new Property[40];
     public Sprite[] titleDeedSpriteArray = new Sprite[40];
+    public string[] communityChestTextsArray = new string[15];
+    public string[] chanceTextsArray = new string[15];
+    public CommunityChanceManager communityChanceManager = new CommunityChanceManager();
 
     // Room
     public Dictionary<string, int> playersDict = new Dictionary<string, int>();
@@ -45,22 +50,14 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI escMenuRoomText;
     public GameObject tradeButton;
     public GameObject endTurnButton;
-    // Trading HUD
-    public GameObject tradingCanvas;
-    public GameObject makingTradeParent;
-    public GameObject recievingTradeParent;
-    public TextMeshProUGUI tradingPlayersText;
-    public TextMeshProUGUI tradingCurrentOffer;
-    public GameObject makingConfirmRequestButton;
-    public GameObject makingCancelTradeButton;
-    public Slider makingTradeOfferSlider;
-    public Image tradingTitleDeed;
-    // PlayerListing HUD
+    // ChanceChest HUD
+    public GameObject chanceChestEmpty;
+    public TextMeshProUGUI chanceChestText;
+    
     public GameObject playerListingObjectPrefab;
     public GameObject playerListingListing;
 
     // Dice
-    //public Image diceSprite;
     public GameObject dice;
 
     // Start is called before the first frame update
@@ -72,8 +69,7 @@ public class GameManager : MonoBehaviour
         hidePurchaseRequest();
         HideEscMenu();
         DisableTurnButtons();
-        HideTradeMenu();
-       // InitiatePlayerListing();
+        HideChanceChest();
         playerTurn = 1;
         myPlayerNum = thisPlayer.GetComponent<PhotonView>().ViewID / 1000;
         CallTurnRPC();
@@ -85,20 +81,21 @@ public class GameManager : MonoBehaviour
     {
         if (playerTurn == myPlayerNum)
         {
-            EnableTurnButtons();
+            if (!rollTaken)
+            {
+                EnableTurnButtons();
+            }
+            else
+            {
+                dice.GetComponent<Button>().interactable = false;
+            }
+        }
+
+        if (doubleCounter % 3 == 0 && doubleCounter != 0)
+        {
+            thisPlayer.GetComponent<PlayerEntity>().GoToJail();
         }
     }
-
-    //public void InitiatePlayerListing()
-    //{
-    //    Debug.Log("hello");
-    //    Debug.Log(playersDict.Count);
-    //    for (int i = 0; i < playersDict.Count; i++)
-    //    {
-    //        Debug.Log("hello again");
-    //        GameObject andy = Instantiate(playerListingObjectPrefab, playerListingListing.GetComponent<Transform>());
-    //    }
-    //}
 
     public void PlayerBuy(int targetProperty, string targetPlayer)
     {
@@ -115,28 +112,14 @@ public class GameManager : MonoBehaviour
 
     public void DisableTurnButtons()
     {
-        tradeButton.GetComponent<Button>().interactable = false;
         endTurnButton.GetComponent<Button>().interactable = false;
         dice.GetComponent<Button>().interactable = false;
     }
 
     public void EnableTurnButtons()
     {
-        if(propertyArray[thisPlayer.GetComponent<PlayerEntity>().currentPosition].isMine)    
-        {
-            tradeButton.GetComponent<Button>().interactable = true;
-            makingTradeOfferSlider.maxValue = 500;
-        }
-        endTurnButton.GetComponent<Button>().interactable = true;
         dice.GetComponent<Button>().interactable = true;
     }
-
-    //public void ChangeDiceSprite(Sprite[] diceSides, int randomDiceSide)
-    //{
-    //    dice = GameObject.Find("Dice Button");
-    //    diceSprite = dice.GetComponent<Image>();
-    //    diceSprite.sprite = diceSides[randomDiceSide];
-    //}
 
     public void UpdateBalanceText()
     {
@@ -191,30 +174,17 @@ public class GameManager : MonoBehaviour
         escMenu.SetActive(false);
     }
 
-    public void ShowMakingTrade()
+    public void ShowChanceChest()
     {
-        tradingTitleDeed.sprite = titleDeedSpriteArray[thisPlayer.GetComponent<PlayerEntity>().currentPosition];
-        tradingPlayersText.text = $"{thisPlayer.GetComponent<PlayerEntity>().userName} -> {propertyArray[thisPlayer.GetComponent<PlayerEntity>().currentPosition].owner}";
-        tradingCanvas.SetActive(true);
-        makingTradeParent.SetActive(true);
+        chanceChestEmpty.SetActive(true);
     }
 
-    public void ShowRecievingTrade()
+    public void HideChanceChest()
     {
-        tradingTitleDeed.sprite = titleDeedSpriteArray[thisPlayer.GetComponent<PlayerEntity>().currentPosition];
-        tradingPlayersText.text = $"{propertyArray[thisPlayer.GetComponent<PlayerEntity>().currentPosition].owner} -> {thisPlayer.GetComponent<PlayerEntity>().userName}";
-        tradingCanvas.SetActive(true);
-        recievingTradeParent.SetActive(true);
+        chanceChestEmpty.SetActive(false);
     }
 
-    public void HideTradeMenu()
-    {
-        tradingCanvas.SetActive(false);
-        recievingTradeParent.SetActive(false);
-        makingTradeParent.SetActive(false);
-    }
-
-    private void LoadProperties(Property[] propertyArray) // WOULD LIKE TO DO FROM A TEXT FILE WHEN FIGURED OUT.
+    private void LoadProperties(Property[] propertyArray)
     {
         string[] propertyNamesArray = new string[40] {"Go" , "Old Kent Road" , "Community Chest" , "Whitechapel Road" , 
         "Income Tax" , "King's Cross Station" , "The Angel Islington" , "Chance" , "Euston Road" , "Pentonville Road" ,
@@ -225,30 +195,39 @@ public class GameManager : MonoBehaviour
         "Chance" , "Park Lane" , "Super Tax" , "Mayfair"
         };
 
+        #region Community Chests Array Initialization
+        communityChestTextsArray = new string[15] { "Pay hospital fee of $100." , "It's your birthday! Collect $10 from every other player.",
+            "Pay a fine of $10 or take a 'Chance'.", "Go back to \"Old Kent Road\"." , "Recieve interest on 7% preference shares, $25." ,
+            "You have won second prize in a beauty contest, collect $10.", "GET OUT OF JAIL FREE." , "You inherited $100." , "Doctor's fee, pay $50.",
+            "Income Tax refund, collect $20." , "Go directly to \"Jail\"." , "Pay your insurance premium of $50.", "From sale of stock you get $50.",
+            "Bank error in  your favour, collect $200.", "Advance to \"Go\"." };
+        #endregion
+
+        #region Chances Array Initialiaztion
+        chanceTextsArray = new string[15] { "Drunk driving fine, pay $20.", "Make general repairs on all houses. Per house: pay $25.",
+            "Advance to \"Trafalgar Square\", collect $200 if you pass go.", "Pay school fees of $150.", "Street repairs, pay $40 per house.",
+            "Advance to \"Go\".", "GET OUT OF JAIL FREE.", "Speeding fine, pay $15.", "Go back three spaces.", "Your building loan matures, recieve $150.", "Bank pays you dividend of $50.",
+            "Advance to \"Mayfair\".", "Go directly to \"Jail\".", "You won a crossword competition, collect $100.", "Annuity matures, collect $100." };
+        #endregion
+
         double[] propertyRentsArray = new double[40] {0, 2, 0, 4, 0, 25, 6, 0, 6, 8, 0, 10, 0, 10, 12, 25, 14, 0, 14, 16, 0, 18, 0, 18, 20, 25, 22, 22, 0, 22, 0, 26, 26, 0, 28, 25, 0, 35, 0, 50};
 
         double[] propertyCostsArray = new double[40] {0, 60, 0, 60, 200, 200, 100, 0, 100, 120, 0, 140, 150, 140,160,200,180,0,180,200,0,220,0,220,240,200,260, 260, 150, 280, 0, 300, 300, 0, 320, 200, 0, 350, 100, 400};
 
-         for (int currentProperty = 0; currentProperty < 40; currentProperty++)
-         {
+        for (int currentProperty = 0; currentProperty < 40; currentProperty++)
+        {
             string propertyName = propertyNamesArray[currentProperty];
-            Property property = new Property();
-            // set name            
+            Property property = new Property();         
             property.name = propertyNamesArray[currentProperty];
-            // set forPurchase
             property.forPurchase = true;
             if (propertyName == "Go" || propertyName == "Community Chest" || propertyName == "Income Tax" || propertyName == "Chance" || propertyName == "In Jail / Just Visiting" || propertyName == "Go To Jail" || propertyName == "Super Tax" || propertyName == "Free Parking")
             {
                 property.forPurchase = false;
             }
-            // set purchaseCost
             property.purchaseCost = propertyCostsArray[currentProperty];
-            // set initialRent
             property.rent = propertyRentsArray[currentProperty];
-
-            // asign property into Property array
             propertyArray[currentProperty] = property;
-         }
+        }
     }
 
     [PunRPC]
@@ -277,8 +256,6 @@ public class GameManager : MonoBehaviour
         {
             playerTurn = 1;
         }
-        UpdateRollText(userName, roll);
-        titleDeedObjectSprite.sprite = titleDeedSpriteArray[thisPlayer.GetComponent<PlayerEntity>().currentPosition];
         DisableTurnButtons();
     }
 }

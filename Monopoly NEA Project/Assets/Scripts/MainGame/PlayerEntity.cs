@@ -18,8 +18,9 @@ public class PlayerEntity : MonoBehaviour
     public TextMeshProUGUI balanceText;
     public PhotonView photonView;
 
-    // Room Setup
-    //public Dictionary<string, int> playersDict = new Dictionary<string, int>();
+    public int getOutJailCardsCount;
+    public bool playerInJail;
+    public int rollsTakenFromJail;
 
     // HUD
     public TextMeshProUGUI balanceDText;
@@ -30,16 +31,14 @@ public class PlayerEntity : MonoBehaviour
     public GameObject playerTabNameListing;
     public Canvas TabScreenCanvas;
 
-    // Start is called before the first frame update
     void Start()
     {
         balanceDText = GameObject.Find("BalanceDText").GetComponent<TextMeshProUGUI>();
-        this.SetPlayerBalance(1500, 1); // Initializes the player's balance to $1,500 at start of game   
+        this.SetPlayerBalance(1500, 1);
         GameManager = GameObject.Find("GameManager").GetComponent<GameManager>();
         photonView = GetComponent<PhotonView>();
         userName = photonView.Owner.NickName;
         balanceDText = GameObject.Find("BalanceDText").GetComponent<TextMeshProUGUI>();
-        //photonView.RPC("GetDict", RpcTarget.AllBuffered, userName, photonView.ViewID);
         TabScreenCanvas = GameObject.Find("TabScreenCanvas").GetComponent<Canvas>();
         playerTabNameListing = GameObject.Find("PlayerListing");
         GameManager.photonView.RPC("UpdatePlayerDicts", RpcTarget.AllBuffered, userName, photonView.ViewID);
@@ -97,7 +96,7 @@ public class PlayerEntity : MonoBehaviour
         double rentForPayment = GameManager.propertyArray[propertyIndex].rent;
         Player transferTarget = GetObjectFromID(GameManager.playersDict[GameManager.propertyArray[propertyIndex].owner]).GetComponent<PhotonView>().Owner;
         Debug.Log(transferTarget.NickName);
-        photonView.RPC("TransferMoneyTo", transferTarget, 1);
+        photonView.RPC("TransferMoneyTo", transferTarget, rentForPayment, 1);
         this.balance -= rentForPayment;
         Debug.Log("Payment Complete");
         GameManager.purchaseRequestCanvas.SetActive(false);
@@ -108,54 +107,86 @@ public class PlayerEntity : MonoBehaviour
         TabScreenCanvas.enabled = true;
     }
 
-    public void SetPlayerBalance(double amount, int addOrMinus) // Subroutine for changing player's balance ;; Takes amount to change and -1 or 1 to indicate add or subtract
+    public void SetPlayerBalance(double amount, int addOrMinus)
     {
         if (addOrMinus == 1) 
         {
-            balance += amount; // If 1 was passed in, add amount to balance of player
+            balance += amount;
         }
         else
         {
             if (addOrMinus == -1)
             {
-                balance -= amount; // If -1 was passed in, subtract amount from balance of player
+                balance -= amount;
             }
             else
             {
-                Debug.Log("addOrMinus pass-in for SetPlayerBalance was not '-1' or '1'"); // If neither -1 or 1 was passed in, log error ||TEMP||
+                Debug.Log("addOrMinus pass-in for SetPlayerBalance was not '-1' or '1'");
             }
         }
     }
 
-    public void Move(int roll) // Subroutine to move player around the board ;; Takes amount rolled by dice, aka. how many positions to move player
+    public void GoToJail()
+    {
+        transform.position = GameManager.propertiesArray[10].transform.position;
+        currentPosition = 10;
+        playerInJail = true;
+        GameManager.doubleCounter = 0;
+    }
+
+    public void Move(int roll)
     {
         if (photonView.IsMine)
         {
-            // Move Player
-            if (currentPosition + roll > 39) // If the future position would exceed squares on the board,
+            if (playerInJail && GameManager.doubleCounter == 0 && rollsTakenFromJail != 3)
             {
-                currentPosition = (currentPosition += roll) - 40; // Minus 40 from the future total in order to account for passing Go
+                rollsTakenFromJail++;
+                return;
+            }
+            rollsTakenFromJail = 0;
+           
+            // Move Player
+            if (currentPosition + roll > 39)
+            {
+                currentPosition = (currentPosition += roll) - 40;
             }
             else
             {
-                currentPosition += roll; // Otherwise, just add dice roll
+                currentPosition += roll;
             }
-            transform.position = GameManager.propertiesArray[currentPosition].transform.position; // Move player to position of waypoint at the new roll location
+            transform.position = GameManager.propertiesArray[currentPosition].transform.position;
 
-            // If statements for buying / paying 
+            // If the position is chance or community chest
+            if (currentPosition == 2 || currentPosition == 17 || currentPosition == 33)
+            {
+                string currentChestText = $"{GameManager.communityChestTextsArray[GameManager.communityChanceManager.chestsNums[0]]}";
+                GameManager.communityChanceManager.RunChestMethod(GameManager.communityChanceManager.chestsNums[0], this);
+                GameManager.communityChanceManager.Reorder("chest");
+                GameManager.chanceChestText.text = $"{currentChestText}";
+                GameManager.ShowChanceChest();
+            }
+
+            if (currentPosition == 7 || currentPosition == 22 || currentPosition == 36)
+            {
+                string currentChanceText = $"{GameManager.chanceTextsArray[GameManager.communityChanceManager.chancesNus[0]]}";
+                GameManager.communityChanceManager.RunChanceMethod(GameManager.communityChanceManager.chancesNus[0], this);
+                GameManager.communityChanceManager.Reorder("chance");
+                GameManager.chanceChestText.text = $"{currentChanceText}";
+                GameManager.ShowChanceChest();
+            }
 
             // If the position is owned by another player:
             if (GameManager.propertyArray[currentPosition].owned == true && GameManager.propertyArray[currentPosition].owner != photonView.Owner.NickName)
             {
                 GameManager.rentCostText.text = $"This property has a rent of {GameManager.propertyArray[currentPosition].rent}"; 
-                GameManager.purchReqText.text = $"\"{GameManager.propertyArray[this.currentPosition].name}\" is owned by {GameManager.propertyArray[this.currentPosition].owner}"; // Set purchase request button text 
-                GameManager.showRentPay(); // Display rent screen
+                GameManager.purchReqText.text = $"\"{GameManager.propertyArray[this.currentPosition].name}\" is owned by {GameManager.propertyArray[this.currentPosition].owner}"; 
+                GameManager.showRentPay();
             }
 
             // If the position is owned by the current player:
             if (GameManager.propertyArray[currentPosition].owned == true && GameManager.propertyArray[currentPosition].owner == photonView.Owner.NickName)
             {
-                GameManager.purchReqText.text = $"You already own \"{GameManager.propertyArray[this.currentPosition].name}\"!"; // Set purchase request button text 
+                GameManager.purchReqText.text = $"You already own \"{GameManager.propertyArray[this.currentPosition].name}\"!";
                 PurchaseRequestNotBuyable();
             }
 
@@ -164,10 +195,10 @@ public class PlayerEntity : MonoBehaviour
             {
                 if (this.balance >= GameManager.propertyArray[this.currentPosition].purchaseCost)
                 {
-                    GameManager.purchReqText.text = $"Would you like to purchase \"{GameManager.propertyArray[this.currentPosition].name}\"?"; // Set purchase request button text 
-                    GameManager.costText.text = $"The property costs: {GameManager.propertyArray[this.currentPosition].purchaseCost}"; // Set property cost text
-                    GameManager.balanceText.text = $"Your balance is: {this.balance}"; // Set balance text
-                    PurchaseRequestBuyable(); // Display purchase screen
+                    GameManager.purchReqText.text = $"Would you like to purchase \"{GameManager.propertyArray[this.currentPosition].name}\"?";
+                    GameManager.costText.text = $"The property costs: {GameManager.propertyArray[this.currentPosition].purchaseCost}";
+                    GameManager.balanceText.text = $"Your balance is: {this.balance}";
+                    PurchaseRequestBuyable();
                 }
                 else
                 {
@@ -177,8 +208,6 @@ public class PlayerEntity : MonoBehaviour
             }
         }
     }
-
-    
 
     [PunRPC]
     void TransferMoneyTo(double amount, int addOrMinus)
@@ -195,14 +224,13 @@ public class PlayerEntity : MonoBehaviour
         Debug.Log($"should have payed player {amount}");
     }
 
-    public void PurchaseRequestBuyable() // Subroutine to display purchase screen
+    public void PurchaseRequestBuyable()
     {
-        GameManager.showPurchaseRequestBuyable(); // Shows the empty parent containing all purchase screen assets
+        GameManager.showPurchaseRequestBuyable();
     }
 
-    public void PurchaseRequestNotBuyable() // Subroutine to display purchase screen
+    public void PurchaseRequestNotBuyable()
     {
-        GameManager.showPurchaseRequestNotBuyable(); // Shows the empty parent containing all purchase screen assets
+        GameManager.showPurchaseRequestNotBuyable();
     }
-
 }
