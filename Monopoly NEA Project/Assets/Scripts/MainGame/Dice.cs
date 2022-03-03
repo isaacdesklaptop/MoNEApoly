@@ -13,7 +13,7 @@ public class Dice : MonoBehaviour
     public int maxOneDice;
     public Sprite[] diceSides = new Sprite[6];
     public Button diceButton;
-    // Start is called before the first frame update
+
     void Start()
     {
         GameManager = GameObject.Find("GameManager").GetComponent<GameManager>();

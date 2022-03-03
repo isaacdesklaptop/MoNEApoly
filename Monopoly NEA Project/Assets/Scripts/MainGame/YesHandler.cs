@@ -17,7 +17,6 @@ public class YesHandler : MonoBehaviour
     {
         currentPlayer = GameObject.Find("Player Object(Clone)").GetComponent<PlayerEntity>();
         GameManager.PlayerBuy(currentPlayer.currentPosition, currentPlayer.userName);
-        //GameManager.propertyArray[currentPlayer.currentPosition].owned = true;
         GameManager.hidePurchaseRequest();
         buttonAudio.Play();
         currentPlayer.SetPlayerBalance(GameManager.propertyArray[currentPlayer.currentPosition].purchaseCost, -1);
